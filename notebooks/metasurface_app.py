@@ -12,8 +12,10 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.io as pio
 
+pio.renderers.default="browser"
 
 excel_file = pd.ExcelFile(r"C:\Users\Ian's\Desktop\Postdoc\Micronet\51_deg_trials.xlsx")
 
@@ -23,29 +25,36 @@ dfs = {sheet_name: excel_file.parse(sheet_name, usecols=[0,1,2,3],
 
 sheet_keys = [keys for keys in dfs]
 
-print(dfs['Trial_2'].head(2))
+cells = list(range(1,31))
 
+df_cells = pd.DataFrame({"cells" : cells})
+
+#print(df_cells)
+
+#print(dfs['Trial_2'].head(2))
+
+
+# filtered_df_1 = dfs['AF']
+# df_1_R = (filtered_df_1["R"].dropna()).to_frame().rename(columns={"R": "R1"})
+# df_1_C = filtered_df_1["C"].dropna().to_frame().rename(columns={"C": "C1"})
+
+# filtered_df_2 = dfs['Trial_2']
+# df_2_R = (filtered_df_2["R"].dropna()).to_frame().rename(columns={"R": "R2"})
+# df_2_C = filtered_df_2["C"].dropna().to_frame().rename(columns={"C": "C2"})
+
+# frames_R = [df_cells, df_1_R, df_2_R]
+
+# df_total_R = pd.concat(frames_R, axis=1)
+
+# #print(df_total_R)
+
+# fig = px.line(df_total_R, x="cells", y=["R1","R2"])
+# fig.show()
+
+
+
+# block this out to test regular plotting
 app = dash.Dash(__name__)
-
-# app.layout = html.Div([
-#     html.H6("Change the value in the text box to see callbacks in action!"),
-#     html.Div([
-#         "Input: ",
-#         dcc.Input(id='my-input', value='initial value', type='text')
-#     ]),
-#     html.Br(),
-#     html.Div(id='my-output'),
-
-# ])
-
-# @app.callback(
-#     Output('graph-with-slider', 'figure'),
-#     Input('year-slider', 'value'))
-
-# def somefun():
-    
-#     return 0
-
 
 
 app.layout = html.Div(
@@ -61,23 +70,43 @@ app.layout = html.Div(
                                                 value = 'Trial_2')],
                           style={'width': '48%', 'float': 'right', 'display':'inline-block'}),
                 
-                html.Div(children=dcc.Graph(id='graph_1'))
+                html.Div(children=dcc.Graph(id='graph_1')),
+                html.Div(children=dcc.Graph(id='graph_2'))
                 
                 ])
 
 @app.callback(
     Output('graph_1', 'figure'),
+    Output('graph_2', 'figure'),
     [Input('item_1', 'value'),Input('item_2', 'value')]
     )
 
 def update_figure(select_1, select_2):
+    
+    nameR_1 = "R_{}".format(select_1)
+    nameR_2 = "R_{}".format(select_2)
+    nameC_1 = "C_{}".format(select_1)
+    nameC_2 = "C_{}".format(select_2)
+    
     filtered_df_1 = dfs[select_1]
+    df_1_R = (filtered_df_1["R"].dropna()).to_frame().rename(columns={"R": nameR_1})
+    df_1_C = filtered_df_1["C"].dropna().to_frame().rename(columns={"C": nameC_1})
+
     filtered_df_2 = dfs[select_2]
+    df_2_R = (filtered_df_2["R"].dropna()).to_frame().rename(columns={"R": nameR_2})
+    df_2_C = filtered_df_2["C"].dropna().to_frame().rename(columns={"C": nameC_2})
+
+    frames_R = [df_cells, df_1_R, df_2_R]
+    frames_C = [df_cells, df_1_C, df_2_C]
+
+    df_total_R = pd.concat(frames_R, axis=1)
+    df_total_C = pd.concat(frames_C, axis=1)
+
+    figR = px.line(df_total_R, x="cells", y=[nameR_1,nameR_2], labels={"value": "Resistance"})
+    figC = px.line(df_total_C, x="cells", y=[nameC_1,nameC_2], labels={"value": "Capacitance"})
     
-    fig = plt.plot(filtered_df_1)
     
-    
-    return 0
+    return figR,figC
 
 
 if __name__ == '__main__':
